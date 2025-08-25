@@ -2,27 +2,49 @@ pipeline {
     agent any
     parameters {
         booleanParam(name: 'RUN_DEPLOY', defaultValue: true, description: 'Should we deploy?')
+        choice(name: 'ENV', choices: ['dev', 'staging', 'prod'], description: 'Select deployment environment')
     }
 
     stages {
         stage('Build') {
             steps {
                 echo 'Building the application...'
+                sh 'sleep 2'
             }
         }
 
         stage('Test in Parallel') {
             parallel {
                 stage('Unit Tests') {
+                    when {
+                        expression { currentBuild.currentResult == 'SUCCESS' } // Run only if Build succeeds
+                    }
                     steps {
                         echo 'Running unit tests...'
-                        sh 'sleep 5'
+                        sh 'sleep 3'
                     }
                 }
                 stage('Integration Tests') {
                     steps {
                         echo 'Running integration tests...'
-                        sh 'sleep 5'
+                        sh 'sleep 3'
+                    }
+                }
+            }
+        }
+
+        stage('Simulate Testing') {
+            parallel {
+                stage('Linux Test') {
+                    steps {
+                        echo 'Simulating Linux tests...'
+                        sh 'sleep 2'
+                    }
+                }
+                stage('Windows Test') {
+                    steps {
+                        echo 'Simulating Windows tests...'
+                        sh 'sleep 2'
                     }
                 }
             }
@@ -37,7 +59,9 @@ pipeline {
 
         stage('Approval') {
             steps {
-                input "Do you want to proceed with deployment?"
+                timeout(time: 2, unit: 'MINUTES') { // Auto-fail if no approval within 2 minutes
+                    input message: "Do you want to proceed with deployment?"
+                }
             }
         }
 
@@ -46,8 +70,8 @@ pipeline {
                 expression { return params.RUN_DEPLOY } 
             }
             steps {
-                echo 'Deploying the application...'
-                sh 'exit 1'
+                echo "Deploying the application to environment: ${params.ENV}"
+                sh 'sleep 2'
             }
         }
     }
