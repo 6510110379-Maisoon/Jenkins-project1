@@ -47,6 +47,7 @@ pipeline {
             }
             steps {
                 echo 'Deploying the application...'
+                sh 'exit 1'
             }
         }
     }
